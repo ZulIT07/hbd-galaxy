@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="ms">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>3D Birthday Galaxy</title>
+    <style>
+        body { margin: 0; background: #000; overflow: hidden; font-family: 'Arial', sans-serif; touch-action: none; }
+        canvas { display: block; position: fixed; top: 0; left: 0; z-index: 1; }
+
+        #ui {
+            position: absolute;
+            top: 50%; left: 50%;
+            transform: translate(-50%, -50%);
+            text-align: center;
+            z-index: 1000;
+            width: 100%;
+            pointer-events: none;
+        }
+
+        .btn-mulai {
+            pointer-events: auto;
+            cursor: pointer;
+            background: #ff0000;
+            color: white;
+            border: 2px solid #fff;
+            padding: 15px 40px;
+            font-size: 18px;
+            border-radius: 50px;
+            box-shadow: 0 0 20px #ff0000;
+            transition: 0.3s;
+        }
+
+        #foto-pusat-container {
+            display: none;
+            position: absolute;
+            top: 50%; left: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 500;
+            pointer-events: none;
+        }
+
+        .frame-bulat {
+            width: 150px;
+            height: 150px;
+            border-radius: 50%;
+            border: 4px solid #fff;
+            box-shadow: 0 0 30px rgba(255,255,255,0.8);
+            overflow: hidden;
+            animation: pulse 2s infinite ease-in-out;
+        }
+
+        .frame-bulat img { width: 100%; height: 100%; object-fit: cover; }
+
+        #pesan {
+            display: none;
+            color: white;
+            position: absolute;
+            bottom: 12%;
+            width: 100%;
+            text-align: center;
+            text-shadow: 0 0 10px red;
+            font-size: 2rem;
+            z-index: 1000;
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+        }
+    </style>
+</head>
+<body>
+
+    <div id="ui">
+        <button class="btn-mulai" id="btn" onclick="initAll()">KLIK UNTUK KEJUTAN ✨</button>
+    </div>
+
+    <div id="foto-pusat-container">
+        <div class="frame-bulat">
+            <img src="A1.jpg" alt="HBD">
+        </div>
+    </div>
+
+    <h1 id="pesan">HAPPY BIRTHDAY! ❤️</h1>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+
+    <script>
+        let scene, camera, renderer, controls, group;
+
+        function initAll() {
+            document.getElementById('btn').style.display = 'none';
+            document.getElementById('foto-pusat-container').style.display = 'block';
+            document.getElementById('pesan').style.display = 'block';
+
+            scene = new THREE.Scene();
+            camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+            camera.position.z = 250;
+
+            renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.setPixelRatio(window.devicePixelRatio);
+            document.body.appendChild(renderer.domElement);
+
+            controls = new THREE.OrbitControls(camera, renderer.domElement);
+            controls.enableDamping = true;
+
+            group = new THREE.Group();
+            scene.add(group);
+
+            // 1. Sfera Partikel Merah
+            const sphereGeo = new THREE.BufferGeometry();
+            const spherePoints = [];
+            for (let i = 0; i < 12000; i++) {
+                const r = 60;
+                const theta = Math.random() * Math.PI * 2;
+                const phi = Math.acos(2 * Math.random() - 1);
+                spherePoints.push(r * Math.sin(phi) * Math.cos(theta), r * Math.sin(phi) * Math.sin(theta), r * Math.cos(phi));
+            }
+            sphereGeo.setAttribute('position', new THREE.Float32BufferAttribute(spherePoints, 3));
+            group.add(new THREE.Points(sphereGeo, new THREE.PointsMaterial({ color: 0xff0000, size: 0.8 })));
+
+            // 2. Galaksi Foto Segi Empat (Banyak seperti bintang)
+            const loader = new THREE.TextureLoader();
+            // Nama fail mengikut folder anda sekarang
+            const senaraiFoto = ["A1.jpg", "A2.jpg", "A3.jpg", "A4.jpg", "A5.jpg", "A6.jpg", "A7.jpg", "A8.jpg"];
+
+            for (let i = 0; i < 20; i++) { // Saya tambah kepada 20 keping foto
+                const urlRawak = senaraiFoto[i % senaraiFoto.length];
+                
+                loader.load(urlRawak, function(texture) {
+                    const material = new THREE.MeshBasicMaterial({ map: texture, side: THREE.DoubleSide });
+                    const geometry = new THREE.PlaneGeometry(30, 30); // Saiz bingkai segi empat
+                    const mesh = new THREE.Mesh(geometry, material);
+
+                    // Letakkan secara rawak dalam orbit
+                    const dist = 100 + Math.random() * 60; 
+                    const theta = Math.random() * Math.PI * 2;
+                    const phi = Math.random() * Math.PI;
+
+                    mesh.position.set(
+                        dist * Math.sin(phi) * Math.cos(theta),
+                        dist * Math.sin(phi) * Math.sin(theta),
+                        dist * Math.cos(phi)
+                    );
+                    
+                    mesh.lookAt(0, 0, 0); 
+                    group.add(mesh);
+                });
+            }
+
+            // 3. Bintang Latar Belakang
+            const starGeo = new THREE.BufferGeometry();
+            const starPos = [];
+            for(let i=0; i<4000; i++) {
+                starPos.push((Math.random()-0.5)*1500, (Math.random()-0.5)*1500, (Math.random()-0.5)*1500);
+            }
+            starGeo.setAttribute('position', new THREE.Float32BufferAttribute(starPos, 3));
+            scene.add(new THREE.Points(starGeo, new THREE.PointsMaterial({color: 0xffffff, size: 0.7})));
+
+            animate();
+        }
+
+        function animate() {
+            requestAnimationFrame(animate);
+            group.rotation.y += 0.002; 
+            controls.update();
+            renderer.render(scene, camera);
+        }
+
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+    </script>
+</body>
+</html>
